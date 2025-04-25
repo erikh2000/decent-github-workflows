@@ -1,0 +1,42 @@
+name: Promote Staging to Production
+
+on:
+  workflow_call:
+    secrets:
+      BUNNY_API_KEY:
+        required: true
+      APP_NAME:
+        required: true
+      STORAGE_ZONE_NAME:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout decent-github-workflows repo
+        uses: actions/checkout@v4
+        with:
+          repository: erikh2000/decent-github-workflows
+          ref: main
+          path: _workflows
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Important to set the secret-based env vars just in this deploy step to avoid secret exposure to 3rd-party code.
+      - name: Promote using BunnyCDN
+        run: node ./_workflows/scripts/promote.js
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          STORAGE_ZONE_NAME: ${{ secrets.STORAGE_ZONE_NAME }}
